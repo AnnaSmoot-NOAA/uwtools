@@ -345,13 +345,10 @@
     "expander": {
       "properties": {
         "expand": {
-          "additionalProperties": false,
-          "minProperties": 1,
-          "patternProperties": {
-            "^.+$": {
-              "type": "array"
-            }
+          "additionalProperties": {
+            "type": "array"
           },
+          "minProperties": 1,
           "type": "object"
         }
       },
@@ -367,10 +364,10 @@
     "familycontainer": {
       "allOf": [
         {
-          "$ref": "#/$defs/nodecontainer"
+          "$ref": "#/$defs/addons"
         },
         {
-          "$ref": "#/$defs/addons"
+          "$ref": "#/$defs/nodecontainer"
         }
       ],
       "type": "object"
@@ -473,10 +470,10 @@
         "^suite_.+$": {
           "allOf": [
             {
-              "$ref": "#/$defs/nodecontainer"
+              "$ref": "#/$defs/addons"
             },
             {
-              "$ref": "#/$defs/addons"
+              "$ref": "#/$defs/nodecontainer"
             }
           ]
         },
