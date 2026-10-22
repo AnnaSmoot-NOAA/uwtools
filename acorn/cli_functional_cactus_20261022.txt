@@ -1,0 +1,104 @@
+===== CLI FUNCTIONAL VALIDATION — 2026-10-22 (Cactus, GDIT VE ve/uwtools/2.16) =====
+
+Beyond the in-process smoke suite (see acorn/smoke_cactus_20261020.txt), the actual
+`uw` CLI primitives that uw-aigfs relies on were exercised directly against the
+GDIT-managed, security-patched VE on Cactus. This mirrors the 2026-08-18 Acorn
+functional validation (then uwtools 2.16.0) and confirms the hardened 2.16.3 build
+behaves identically.
+
+Environment:
+  Machine:     Cactus (WCOSS2), node clogin04
+  VE:          ve/uwtools/2.16  (GDIT-managed, hardened/security-patched)
+  uwtools:     2.16.3   (vs. 2.16.0 on Acorn — patch-version drift, expected)
+  Python:      3.12.0   (/apps/prod/ve/intel/19.1.3.304/python/3.12.0/uwtools/2.16/bin/python3)
+  Load seq:    module load intel/19.1.3.304
+               module load ve/uwtools/2.16
+               module load wgrib2/2.0.8
+
+-------------------------------------------------------------------------------
+wgrib2:  CONFIRMED
+-------------------------------------------------------------------------------
+  which wgrib2 -> /apps/ops/prod/libs/intel/19.1.3.304/wgrib2/2.0.8/bin/wgrib2
+  wgrib2 --version -> v0.2.0.8 2/2019
+  Same official version and path as Acorn; carries over to Cactus cleanly.
+
+-------------------------------------------------------------------------------
+uw config realize:  PASS
+-------------------------------------------------------------------------------
+  Input (/tmp/mini.yaml):
+    user:
+      platform: wcoss2
+    platform:
+      scheduler: pbs
+      account: MYACCT
+    rendered:
+      sched: "{{ platform.scheduler }}"
+      plat: "{{ user.platform }}"
+      acct: "{{ platform.account }}"
+
+  uw config realize --input-file /tmp/mini.yaml --output-file /tmp/mini_out.yaml
+  Output (/tmp/mini_out.yaml) — all Jinja2 cross-references resolved, no bare {{ }}:
+    rendered:
+      sched: pbs
+      plat: wcoss2
+      acct: MYACCT
+
+-------------------------------------------------------------------------------
+uw config validate:  PASS (positive + negative)
+-------------------------------------------------------------------------------
+  IMPORTANT (2.16.x behavior): `uw config validate --schema-file` expects a JSON
+  schema file. validator.py does json.loads(schema_file.read_text()), so a YAML
+  schema raises:
+    json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+  This is NOT a VE/install problem — it is the documented schema-file format
+  requirement. Real uw-aigfs driver schemas (*.jsonschema) are already JSON, so
+  this is only a gotcha for ad-hoc test schemas. Use a .json schema.
+
+  positive (valid config vs. /tmp/mini_schema.json):
+    uw config validate --schema-file /tmp/mini_schema.json --input-file /tmp/mini.yaml
+    INFO Schema validation succeeded for config
+
+  negative (account removed, /tmp/mini_bad.yaml):
+    uw config validate --schema-file /tmp/mini_schema.json --input-file /tmp/mini_bad.yaml
+    ERROR 1 schema-validation error found in config
+    ERROR Error at platform:
+    ERROR   'account' is a required property
+
+  Confirms validate executes correctly and reports the precise error location.
+
+-------------------------------------------------------------------------------
+uw execute:  PASS  (minimal custom driver, run to completion)
+-------------------------------------------------------------------------------
+  Minimal DriverCycleBased driver (/tmp/uwexec/mydriver.py) with one @task
+  (`greet`, writes hello.txt), required `provisioned_rundir` @collection, a
+  matching /tmp/uwexec/mydriver.jsonschema, and config /tmp/uwexec/mydriver.yaml.
+
+  uw execute --module /tmp/uwexec/mydriver.py --classname MyDriver --task greet \
+    --config-file /tmp/uwexec/mydriver.yaml --cycle 2026-10-22T00
+    INFO Schema validation succeeded for mydriver config
+    INFO Validating config against internal schema: platform
+    INFO Schema validation succeeded for platform config
+    INFO greet: Executing
+    INFO greet: Ready
+  /tmp/uwexec/run/hello.txt -> "hello from cactus 2.16.3"
+
+  Confirms the FULL execute path on 2.16.3: CLI dispatch -> module load ->
+  class instantiation -> config + platform schema validation -> iotaa task graph
+  resolution -> task execution -> asset ready. The driver-authoring contract from
+  2.16.0 (@collection provisioned_rundir, positional Asset(ref, ready), the
+  <driver>.jsonschema sidecar) is UNCHANGED on 2.16.3.
+
+===== NET =====
+
+  All four CLI primitives — realize / validate / execute (+ wgrib2 binary) —
+  confirmed working on the GDIT-hardened Cactus VE (uwtools 2.16.3), identical in
+  behavior to the Acorn 2.16.0 validation. Combined with the clean smoke suite
+  (12 passed, 2 xfailed), Cactus VE testing for 2.16.x is COMPLETE.
+
+  Remaining work is NOT uwtools-primitive testing:
+    - Run a REAL uw-aigfs driver (generate_ics.py / run_graphcast.py) — needs
+      pre-staged GraphCast weights + GFS input (the NRT runs on Cactus/Dogwood).
+    - Confirm Dogwood VE install (was targeted 10/16) with GDIT.
+    - Begin GDIT approval for uwtools 2.20.* / 2.21.* (uw-aigfs needs >= 2.18);
+      raise the v2.17+ ecflow eager-import blocker with the uw-tools team FIRST
+      (see acorn/ECFLOW_PYTHON_ISSUES.md).
