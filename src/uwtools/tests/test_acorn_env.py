@@ -1,4 +1,4 @@
-"""
+r"""
 Acorn / Cactus (WCOSS2 test environment) smoke tests.
 
 Run these on Acorn after loading the workflow environment:
@@ -7,10 +7,12 @@ Run these on Acorn after loading the workflow environment:
     module load ve/uwtools/0.1
     module load wgrib2/2.0.8
 
-Then run using the PYTHONPATH workaround (pytest is not yet in ve/uwtools/0.1):
+Then run using the PYTHONPATH workaround (pytest is not yet in ve/uwtools/0.1).
+Borrow pytest from the mag/7.0 VE while keeping the uwtools/0.1 packages active:
 
-    PYTHONPATH=/apps/prod/ve/intel/19.1.3.304/python/3.12.0/mag/7.0/lib/python3.12/site-packages:/apps/prod/ve/intel/19.1.3.304/python/3.12.0/uwtools/0.1/lib/python3.12/site-packages \\
-        python3 -m pytest src/uwtools/tests/test_acorn_env.py -v
+    MAG=/apps/prod/ve/intel/19.1.3.304/python/3.12.0/mag/7.0/lib/python3.12/site-packages
+    UWT=/apps/prod/ve/intel/19.1.3.304/python/3.12.0/uwtools/0.1/lib/python3.12/site-packages
+    PYTHONPATH=$MAG:$UWT python3 -m pytest src/uwtools/tests/test_acorn_env.py -v
 
 NOTE: The PYTHONPATH workaround is needed because pytest is not installed in
 ve/uwtools/0.1. It borrows pytest from the mag/7.0 VE while keeping the
@@ -176,6 +178,7 @@ wgrib2 versions:
   native to ve/uwtools/0.1. (Resolved on 2026-08-06 — see below.)
 
   Warnings:
+
     - test_netcdf4_import: RuntimeWarning: numpy.ndarray size changed, may indicate
       binary incompatibility. Expected 16 from C header, got 96 from PyObject.
       Not a failure. Flagged for Bongi (see Known Issue 5).
@@ -223,6 +226,7 @@ wgrib2 versions:
     FAILED  (0):  none
 
   Warnings:
+
     - test_netcdf4_import: RuntimeWarning: numpy.ndarray size changed... Expected 16
       from C header, got 96 from PyObject. STILL PRESENT with native numpy 2.5.1 /
       netCDF4 1.7.4. Not a failure. See Known Issue 5.
@@ -330,7 +334,7 @@ wgrib2 versions:
       blocker (test_ecflow_cli_import_blocker_v217plus) becomes directly relevant and
       must be re-run against whatever version GDIT delivers.
 
-===== CACTUS SMOKE TEST RESULTS — 2026-10-20 (GDIT VE ve/uwtools/2.16, uwtools 2.16.3) =====
+===== CACTUS SMOKE TEST RESULTS — 2026-10-20 (GDIT VE ve/uwtools/2.16) =====
 
   Environment:
     Node:        clogin07 (Cactus / WCOSS2)
@@ -349,34 +353,33 @@ wgrib2 versions:
 
 ===== TODO: AFTER v2.16.x APPROVAL =====
 
-  [x] Run: python -m pytest src/uwtools/tests/test_acorn_env.py -v  (done 2026-07-27; re-run 2026-08-06)
+  [x] Run test_acorn_env.py  (done 2026-07-27; re-run 2026-08-06)
   [x] Record actual Python version available in the loaded venv  (Python 3.12.0)
-  [x] Verify test_ecflow_import is correctly xfail (not unexpectedly passing)  (confirmed 07-27 & 08-06)
-  [x] Confirm qsub is on PATH (test_pbs_scheduler_available)  (confirmed: /opt/pbs/bin/qsub)
-  [x] Confirm wgrib2 is on PATH after module load (test_wgrib2_binary)  (confirmed: wgrib2/2.0.8)
-  [x] Confirm `uw` is on PATH from the venv (test_uw_cli_available)  (confirmed)
+  [x] Verify test_ecflow_import is correctly xfail  (confirmed 07-27 & 08-06)
+  [x] Confirm qsub is on PATH  (confirmed: /opt/pbs/bin/qsub)
+  [x] Confirm wgrib2 is on PATH after module load  (confirmed: wgrib2/2.0.8)
+  [x] Confirm `uw` is on PATH from the venv  (confirmed)
   [x] Run test_uwtools_config_realize to confirm Jinja2 rendering works  (PASSED)
-  [x] Confirm xarray/netCDF4/grib2io are NATIVE to the VE (not borrowed)  (confirmed 2026-08-06)
+  [x] Confirm xarray/netCDF4/grib2io are NATIVE to the VE  (confirmed 2026-08-06)
   [x] Confirm wgrib2 version question with GDIT  (2.0.8 official; 3.1.1 stale stub)
-  [x] Functional: uw config realize against a real WCOSS2 config on Acorn  (clean render 2026-08-18)
-  [x] Functional: uw config validate (positive + negative) on Acorn  (PASS 2026-08-18)
+  [x] Functional: uw config realize on Acorn  (clean render 2026-08-18)
+  [x] Functional: uw config validate on Acorn  (PASS 2026-08-18)
   [x] Functional: uw fs makedirs / link / copy on Acorn  (all PASS 2026-08-18)
-  [x] Functional: uw execute (minimal custom driver, run to completion) on Acorn  (PASS 2026-08-18)
-  [x] Confirm GDIT VE (ve/uwtools/2.16) loads cleanly on Cactus  (confirmed 2026-10-20, uwtools 2.16.3)
-  [x] Relax strict 2.16.0 version assertions to accept 2.16.x patch releases  (this change)
-  [x] Run full smoke suite against the Cactus VE and record PASS/XFAIL counts  (12 passed, 2 xfailed, 0 failed — 2026-10-20)
-  [ ] Confirm Dogwood install of ve/uwtools/2.16 (planned 10/16)
-  [ ] Functional: uw execute a REAL uw-aigfs driver — deferred to the real run (needs
-      GraphCast model weights staged + GFS input; graphcast package import NOT required)
-  [ ] Get pytest added to ve/uwtools/0.1 on Acorn (already native in Cactus 2.16.3 VE)
-  [ ] Begin v2.18.*/2.20.*/2.21.* approval process with GDIT (uw-aigfs requires 2.18.*)
+  [x] Functional: uw execute (minimal driver) on Acorn  (PASS 2026-08-18)
+  [x] Confirm GDIT VE loads cleanly on Cactus  (confirmed 2026-10-20, uwtools 2.16.3)
+  [x] Relax strict 2.16.0 version assertions to accept 2.16.x  (this change)
+  [x] Run full smoke suite against the Cactus VE  (12 passed, 2 xfailed, 0 failed)
+  [ ] Confirm Dogwood install of ve/uwtools/2.16  (planned 10/16)
+  [ ] Functional: uw execute a REAL uw-aigfs driver  (needs weights + GFS input)
+  [ ] Get pytest added to ve/uwtools/0.1 on Acorn  (already native in Cactus VE)
+  [ ] Begin v2.18.*/2.20.*/2.21.* approval process with GDIT
   [ ] Build modulefiles/wflow_wcoss (Lmod/TCL; no conda; no ecflow in venv)
   [ ] Fix load_wflow_modules.sh: replace conda lines with `module load wflow_$1`
   [ ] Pre-generate suite .def on Ursa: `uw ecflow realize -c ush/wcoss_config.yaml`
   [ ] Commit rendered wcoss_suite.def; use `ecflow_client --load` on WCOSS2
   [ ] Confirm /lfs/h1/ops/prod/com/gfs/... path and data retention window
   [ ] Fix user.aigfs_home → user.aigfs_app in uw-aigfs parm/wflow/aigfs_base.yaml
-  [ ] Raise v2.17+ ecflow CLI blocker with uw-tools team before upgrading past 2.16.x
+  [ ] Raise v2.17+ ecflow CLI blocker with uw-tools team before upgrading
 """
 
 import importlib.metadata
@@ -417,7 +420,7 @@ def test_uwtools_schema_loading():
     """
     Core uwtools API must load and return a valid schema dict.
     """
-    import uwtools.api.ww3 as ww3
+    from uwtools.api import ww3  # noqa: PLC0415
 
     schema_dict = ww3.schema()
     assert isinstance(schema_dict, dict), (
@@ -577,8 +580,10 @@ def test_uw_cli_version():
     importable from the venv. If this fails with an ImportError for ecflow, the wrong uwtools
     version is installed — check with `pip show uwtools`.
     """
-    result = subprocess.run(
-        ["uw", "--version"],
+    uw_path = shutil.which("uw")
+    assert uw_path is not None, "'uw' command not found on PATH."
+    result = subprocess.run(  # noqa: S603
+        [uw_path, "--version"],
         capture_output=True,
         text=True,
         check=False,
